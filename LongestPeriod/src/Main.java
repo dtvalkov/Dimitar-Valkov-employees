@@ -3,6 +3,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -21,7 +22,8 @@ public class Main {
 																									// date formats
 
 	public static void main(String[] args) throws ParseException {
-
+		
+	
 		String fileName = new String();
 		boolean firsttime = true;
 
@@ -213,12 +215,20 @@ public class Main {
 	}
 
 	public static String parseDates(String d) { // function to detect the used date format
+		
+		
 		if (d != null) {
 			for (String parse : formatStrings) {
+				
 				DateFormat sdf = new SimpleDateFormat(parse);
 				try {
-					sdf.parseObject(d);
-					return parse;
+					sdf.parse(d);
+					
+					if (d.charAt(2) == parse.charAt(2) || d.charAt(4) == parse.charAt(4)) //this line is needed to prevent parsing the wrong format
+					{
+						return parse;//possible ambiguation between dd*mm*yyyy and mm*dd*yyyy formats
+					}
+					
 				} catch (ParseException e) {
 
 				}
@@ -226,5 +236,6 @@ public class Main {
 		}
 		return null;
 	}
+
 
 } // end class Main
