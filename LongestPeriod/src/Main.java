@@ -1,32 +1,57 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
 import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Scanner;
+
+
 
 public class Main {
 
 	static List<Project> database = new ArrayList<Project>(); // contains all the project info from the text file
+	
+	static List<String> formatStrings = Arrays.asList( "yyyy-MM-dd", "yyyy/MM/dd", "yyyy:MM:dd", "yyyy.MM.dd" , "dd-MM-yyyy", "dd/MM/yyyy", "dd.MM.yyyy",
+		"MM-dd-yyyy", "MM/dd/yyyy", "MM:dd:yyyy"); //list of possible date formats
 
 	public static void main(String[] args) throws ParseException {
-
 		
-		readFile("data.txt");
+		
+		String fileName = new String();
+		boolean firsttime = true;
+		
+		do {
+			if (!firsttime) System.out.println("Wrong file/path name!");
+			
+			Scanner scan = new Scanner(System.in);
+			System.out.print("Please enter the file name/path: ");
+			//fileName = scan.nextLine();
+			firsttime = false;
+			
+			
+		} while (readFile("data.txt") == false);
+		
+		
+		
 		List<Triplet<Employee, Employee, Integer>> pairs = getPairs();
 		pairs = CombinePairs(pairs);
 		getResults(pairs);
-
+	
 	}
 
-	private static void readFile(String path) throws ParseException {
+	private static boolean readFile(String path) throws ParseException {
 		// function to read the data from the txt file
 
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("YYYY-MM-dd");
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 		BufferedReader reader;
+		
 
 		try {
 			reader = new BufferedReader(new FileReader(path));
@@ -69,12 +94,15 @@ public class Main {
 				}
 
 			}
-			reader.close();
+			reader.close(); return true;
 		} catch (IOException e) {
-			e.printStackTrace();
+			
+			return false;
 		}
 
 	} // end readFile
+	
+	
 
 	private static int getDays(LocalDate date1, LocalDate date2)// function to calculate and return the days between 2
 																// dates
@@ -84,22 +112,29 @@ public class Main {
 
 		return noOfDaysBetween;
 	}
+	
+	
 
 	private static List<Triplet<Employee, Employee, Integer>> getPairs() {
-		List<Triplet<Employee, Employee, Integer>> pairs = new ArrayList<>();
-		
 		/* function to create a collection of Triplet objects
 		 * which are an Employee-Employee pair + the days they've worked together
 		 */
+		List<Triplet<Employee, Employee, Integer>> pairs = new ArrayList<>();
+	
+		
 		for (Project pr : database) {
 
 			List<Triplet<Employee, String, String>> list = pr.getInfo();
-
+			
 			for (int i = 0; i < list.size(); i++)
 				for (int j = i + 1; j < list.size(); j++) {
 					
-					LocalDate date1 = LocalDate.parse(list.get(i).y);
-					LocalDate date2 = LocalDate.parse(list.get(j).y);
+					DateTimeFormatter formatter = DateTimeFormatter.ofPattern(parseDates(list.get(i).y));//detecting the used date format
+					LocalDate date1 = LocalDate.parse(list.get(i).y, formatter);
+					
+					formatter = DateTimeFormatter.ofPattern(parseDates(list.get(j).y));
+					LocalDate date2 = LocalDate.parse(list.get(j).y, formatter);
+					
 					LocalDate firstDayTogether;
 					LocalDate lastDayTogether;
 
@@ -108,9 +143,14 @@ public class Main {
 
 					else
 						firstDayTogether = date2;
+					
+					
 
-					date1 = LocalDate.parse(list.get(i).z);
-					date2 = LocalDate.parse(list.get(j).z);
+					formatter = DateTimeFormatter.ofPattern(parseDates(list.get(i).z));
+					date1 = LocalDate.parse(list.get(i).z, formatter);
+					
+					formatter = DateTimeFormatter.ofPattern(parseDates(list.get(j).z));
+					date2 = LocalDate.parse(list.get(j).z, formatter);
 
 					if (date1.compareTo(date2) > 0)
 						lastDayTogether = date2;
@@ -121,8 +161,7 @@ public class Main {
 					int daysTogether = getDays(firstDayTogether, lastDayTogether);
 
 					if (daysTogether > 0)
-						pairs.add(new Triplet<Employee, Employee, Integer>(list.get(i).x, list.get(j).x, daysTogether));
-
+pairs.add(new Triplet<Employee, Employee, Integer>(list.get(i).x, list.get(j).x, daysTogether));
 				}
 
 		}
@@ -165,10 +204,10 @@ public class Main {
 		// function to print the result - which pair has worked together the most
 
 		int max = 0;
-		Triplet<Employee, Employee, Integer> result = new Triplet();
+		Triplet<Employee, Employee, Integer> result = new Triplet<Employee, Employee, Integer>();
 
-		for (Triplet<?, ?, ?> tr : list) {
-			int days = (int) tr.z;
+		for (Triplet<Employee, Employee, Integer> tr : list) {
+			int days = tr.z;
 			if (days > max) {
 				max = days;
 				result = (Triplet<Employee, Employee, Integer>) tr;
@@ -179,5 +218,22 @@ public class Main {
 				+ " have worked together " + (int) result.z + " days in total!");
 
 	}
+	
+	public static String parseDates(String d) { //function to detect the used date format
+        if (d != null) {
+            for (String parse : formatStrings) {
+                DateFormat sdf = new SimpleDateFormat(parse);
+                try {
+                	sdf.parseObject(d);
+                    return parse;
+                } catch (ParseException e) {
+
+                }
+            }
+        }
+        return null;
+	}
+	
+
 
 } // end class Main
